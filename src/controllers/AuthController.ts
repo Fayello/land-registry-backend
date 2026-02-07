@@ -1,12 +1,8 @@
 import { Request, Response } from "express";
 import { User, UserRole } from "../entities/User";
 import jwt from "jsonwebtoken";
-// Note: In a real app, use bcryptjs. For this prototype, we'll simulate hashing or use a simple one if installed. 
-// I'll assume bcryptjs is NOT installed yet, so I'll add it to the install list or use simple string concat for prototype (NOT SECURE but functional for demo).
-// WAIT - I can just install bcryptjs now.
-// For now, I will write the code assuming bcrypt is available, and run the install command.
-
-import bcrypt from "bcrypt"; // Need to install this
+import bcrypt from "bcrypt";
+import { MailService } from "../services/mailService";
 
 export class AuthController {
     static async register(req: Request, res: Response) {
@@ -86,6 +82,49 @@ export class AuthController {
                 message: "Internal server error",
                 error: process.env.NODE_ENV === "development" ? (error as any).message : undefined
             });
+        }
+    }
+
+    static async forgotPassword(req: Request, res: Response) {
+        const { email } = req.body;
+        try {
+            const user = await User.findOne({ where: { email } });
+            if (!user) {
+                // For security reasons, don't reveal that the user doesn't exist
+                return res.json({ message: "If an account exists with this email, you will receive an OTP." });
+            }
+
+            const otp = Math.floor(100000 + Math.random() * 900000).toString();
+            user.reset_otp = otp;
+            user.reset_otp_expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+            await user.save();
+
+            await MailService.sendOTP(email, otp);
+
+            res.json({ message: "OTP sent successfully" });
+        } catch (error) {
+            console.error("Forgot password error:", error);
+            res.status(500).json({ message: "Internal server error" });
+        }
+    }
+
+    static async resetPassword(req: Request, res: Response) {
+        const { email, otp, newPassword } = req.body;
+        try {
+            const user = await User.findOne({ where: { email, reset_otp: otp } });
+            if (!user || !user.reset_otp_expires || user.reset_otp_expires < new Date()) {
+                return res.status(400).json({ message: "Invalid or expired OTP" });
+            }
+
+            user.password_hash = await bcrypt.hash(newPassword, 10);
+            user.reset_otp = null as any;
+            user.reset_otp_expires = null as any;
+            await user.save();
+
+            res.json({ message: "Password reset successfully" });
+        } catch (error) {
+            console.error("Reset password error:", error);
+            res.status(500).json({ message: "Internal server error" });
         }
     }
 }
