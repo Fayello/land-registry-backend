@@ -20,7 +20,7 @@ export class GeoUtils {
                 const existingFeature = turf.feature(existingParcel.boundary);
 
                 // check for intersection
-                const intersection = turf.intersect(turf.featureCollection([newFeature as any, existingFeature as any]));
+                const intersection = turf.intersect(newFeature as any, existingFeature as any);
 
                 // If intersect returns a feature, there is overlap
                 if (intersection) {

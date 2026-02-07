@@ -31,7 +31,7 @@ async function runGeoTest() {
         const newFeature = turf.feature(newGeo);
         for (const parcel of existing) {
             const existingFeature = turf.feature(parcel.boundary);
-            const intersection = turf.intersect(turf.featureCollection([newFeature, existingFeature]));
+            const intersection = turf.intersect(newFeature, existingFeature);
             if (intersection) return true;
         }
         return false;
