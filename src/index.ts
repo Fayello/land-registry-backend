@@ -31,7 +31,10 @@ const port = process.env.PORT || 3001;
 
 // Middleware
 app.use(helmet());
-app.use(cors());
+app.use(cors({
+    origin: ["https://digifoncier.vercel.app", "https://land-registry-frontend.vercel.app", "http://localhost:3000"],
+    credentials: true
+}));
 app.use(express.json());
 
 // Database Connection
