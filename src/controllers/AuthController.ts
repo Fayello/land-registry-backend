@@ -81,8 +81,11 @@ export class AuthController {
                 }
             });
         } catch (error) {
-            console.error("Login error:", error);
-            res.status(500).json({ message: "Internal server error" });
+            console.error("Login error [FULL STACK]:", error);
+            res.status(500).json({
+                message: "Internal server error",
+                error: process.env.NODE_ENV === "development" ? (error as any).message : undefined
+            });
         }
     }
 }

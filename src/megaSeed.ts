@@ -12,15 +12,33 @@ import { SystemConfig } from "./entities/SystemConfig";
 import { AuditSubscriber } from "./subscribers/AuditSubscriber";
 import { seedRBAC } from "./seeders/rbacSeeder";
 import * as bcrypt from "bcrypt";
+import * as dotenv from "dotenv";
 
-const AppDataSource = new DataSource({
-    type: "sqlite",
-    database: "database_v2.sqlite",
-    synchronize: true,
-    logging: false,
-    entities: [User, Parcel, Deed, AuditLog, Case, Transaction, Role, Permission, SystemConfig],
-    subscribers: [AuditSubscriber],
-});
+dotenv.config({ path: ".env.local" });
+dotenv.config();
+
+const isProduction = process.env.DATABASE_URL;
+
+const AppDataSource = new DataSource(
+    isProduction
+        ? {
+            type: "postgres",
+            url: process.env.DATABASE_URL,
+            synchronize: true, // Auto-create tables if missing
+            logging: true,
+            entities: [User, Parcel, Deed, AuditLog, Case, Transaction, Role, Permission, SystemConfig],
+            subscribers: [AuditSubscriber],
+            ssl: { rejectUnauthorized: false }
+        }
+        : {
+            type: "sqlite",
+            database: "database_v2.sqlite",
+            synchronize: true,
+            logging: false,
+            entities: [User, Parcel, Deed, AuditLog, Case, Transaction, Role, Permission, SystemConfig],
+            subscribers: [AuditSubscriber],
+        }
+);
 
 async function megaSeed() {
     console.log("🚀 Starting Fixed Mega Seed...");
@@ -35,16 +53,29 @@ async function megaSeed() {
         const conservatorRole = await Role.findOneBy({ name: "Conservator" });
         const cadastreRole = await Role.findOneBy({ name: "Cadastre" });
 
-        // 2. Clear Existing (on V2 this should be empty but good practice)
-        await Transaction.clear();
-        await Case.clear();
-        await Deed.clear();
-        await Parcel.clear();
-        await User.clear();
-        await AppDataSource.query("DELETE FROM sqlite_sequence WHERE name='cases'");
-        await AppDataSource.query("DELETE FROM sqlite_sequence WHERE name='users'");
-        await AppDataSource.query("DELETE FROM sqlite_sequence WHERE name='parcels'");
-        await AppDataSource.query("DELETE FROM sqlite_sequence WHERE name='deeds'");
+        // 2. Clear Existing (Order matters for FK, but CASCADE handles circularity in PG)
+        console.log("🧹 Clearing existing data...");
+        if (isProduction) {
+            // Postgres supports CASCADE which handles the Parcel <-> Deed circularity
+            const tables = ["audit_logs", "transactions", "cases", "deeds", "parcels", "users"];
+            for (const table of tables) {
+                await AppDataSource.query(`TRUNCATE TABLE "${table}" RESTART IDENTITY CASCADE`);
+            }
+        } else {
+            // SQLite fallback
+            await AppDataSource.query("PRAGMA foreign_keys = OFF");
+            await AuditLog.clear();
+            await Transaction.clear();
+            await Case.clear();
+            await Deed.clear();
+            await Parcel.clear();
+            await User.clear();
+            await AppDataSource.query("DELETE FROM sqlite_sequence WHERE name='cases'");
+            await AppDataSource.query("DELETE FROM sqlite_sequence WHERE name='users'");
+            await AppDataSource.query("DELETE FROM sqlite_sequence WHERE name='parcels'");
+            await AppDataSource.query("DELETE FROM sqlite_sequence WHERE name='deeds'");
+            await AppDataSource.query("PRAGMA foreign_keys = ON");
+        }
 
         const passwordHash = await bcrypt.hash("password123", 10);
 

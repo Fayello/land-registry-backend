@@ -24,8 +24,7 @@ import parcelRoutes from "./routes/parcels";
 import adminRoutes from "./routes/admin";
 import ingestionRoutes from "./routes/ingestion";
 
-dotenv.config({ path: ".env.local" });
-dotenv.config(); // Fallback to .env
+dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -36,6 +35,24 @@ app.use(cors({
     origin: ["https://digifoncier.vercel.app", "https://land-registry-frontend.vercel.app", "http://localhost:3000"],
     credentials: true
 }));
+
+// Middleware to ensure DB is initialized before requests
+app.use(async (req, res, next) => {
+    if (!AppDataSource.isInitialized) {
+        console.log("Waiting for database initialization...");
+        try {
+            await AppDataSource.initialize();
+            console.log("Database initialized on-demand");
+            next();
+        } catch (err) {
+            console.error("Database initialization failed:", err);
+            res.status(500).json({ message: "Database connection failed", status: "error" });
+        }
+    } else {
+        next();
+    }
+});
+
 app.use(express.json());
 
 // Database Connection
@@ -76,8 +93,10 @@ app.use("/api/ingestion", ingestionRoutes);
 
 const startServer = async () => {
     try {
-        await AppDataSource.initialize();
-        console.log("Database connected via TypeORM");
+        if (!AppDataSource.isInitialized) {
+            await AppDataSource.initialize();
+            console.log("Database connected via TypeORM");
+        }
 
         // Seed RBAC on startup
         await seedRBAC();
