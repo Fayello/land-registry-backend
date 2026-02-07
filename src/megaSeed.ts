@@ -77,7 +77,12 @@ async function megaSeed() {
             await AppDataSource.query("PRAGMA foreign_keys = ON");
         }
 
-        const passwordHash = await bcrypt.hash("password123", 10);
+        const adminPass = await bcrypt.hash("Admin_Secur3!2026", 10);
+        const conservatorPass = await bcrypt.hash("Roger_Milla_789#", 10);
+        const cadastrePass = await bcrypt.hash("Ibrahim_Cadastre_2024*", 10);
+        const surveyorPass = await bcrypt.hash("Samuel_Surveyor_YDE!", 10);
+        const clerkPass = await bcrypt.hash("Sita_Clerk_Digitize_24", 10);
+        const ownerPass = await bcrypt.hash("Land_Owner_Verified_2024", 10);
 
         // 3. Create Users
         console.log("👥 Creating Users...");
@@ -86,7 +91,7 @@ async function megaSeed() {
         const adminUser = User.create({
             full_name: "System Administrator",
             email: "admin@landregistry.cm",
-            password_hash: passwordHash,
+            password_hash: adminPass,
             role: UserRole.ADMIN,
             role_obj: adminRole!
         });
@@ -96,7 +101,7 @@ async function megaSeed() {
         const conservator = User.create({
             full_name: "Roger Milla",
             email: "roger.milla@gov.cm",
-            password_hash: passwordHash,
+            password_hash: conservatorPass,
             role: UserRole.CONSERVATOR,
             role_obj: conservatorRole!,
             national_id_number: "2024-CONS-001"
@@ -107,7 +112,7 @@ async function megaSeed() {
         const owner1 = User.create({
             full_name: "Jean-Pierre Fossi",
             email: "jean.fossi@gmail.com",
-            password_hash: passwordHash,
+            password_hash: ownerPass,
             role: UserRole.OWNER,
             national_id_number: "CE-1985-001-22"
         });
@@ -117,7 +122,7 @@ async function megaSeed() {
         const owner2 = User.create({
             full_name: "Marie Atangana",
             email: "marie.atangana@yahoo.fr",
-            password_hash: passwordHash,
+            password_hash: ownerPass,
             role: UserRole.OWNER,
             national_id_number: "LT-1990-045-88"
         });
@@ -127,7 +132,7 @@ async function megaSeed() {
         const cadastreStaff = User.create({
             full_name: "Ibrahim Daouda",
             email: "ibrahim.daouda@mindcaf.cm",
-            password_hash: await bcrypt.hash(process.env.ADMIN_PASSWORD || "password123", 10),
+            password_hash: cadastrePass,
             role: UserRole.CADASTRE,
             role_obj: cadastreRole!
         });
@@ -138,7 +143,7 @@ async function megaSeed() {
         const fieldSurveyor = User.create({
             full_name: "Samuel Eto'o",
             email: "samuel.etoo@geometer.cm",
-            password_hash: passwordHash,
+            password_hash: surveyorPass,
             role: UserRole.SURVEYOR,
             role_obj: surveyRole!
         });
@@ -149,7 +154,7 @@ async function megaSeed() {
         const clerkUser = User.create({
             full_name: "Thérèse Sita",
             email: "clerk@mindaf.gov",
-            password_hash: passwordHash,
+            password_hash: clerkPass,
             role: UserRole.CLERK,
             role_obj: clerkRole!
         });
