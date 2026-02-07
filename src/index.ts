@@ -56,13 +56,20 @@ app.use(async (req, res, next) => {
 app.use(express.json());
 
 // Database Connection
-const isProduction = process.env.NODE_ENV === "production" || process.env.DATABASE_URL;
+const databaseUrl = process.env.DATABASE_URL;
+const isProduction = process.env.NODE_ENV === "production" || !!databaseUrl;
+
+if (isProduction && !databaseUrl) {
+    console.warn("⚠️  WARNING: Running in production mode but DATABASE_URL is UNDEFINED. Defaulting to local postgres (which will fail on Vercel).");
+} else if (databaseUrl) {
+    console.log(`📡 Database URL detected: ${databaseUrl.substring(0, 15)}...${databaseUrl.substring(databaseUrl.length - 5)}`);
+}
 
 export const AppDataSource = new DataSource(
-    isProduction
+    isProduction && databaseUrl
         ? {
             type: "postgres",
-            url: process.env.DATABASE_URL,
+            url: databaseUrl,
             synchronize: false,
             logging: true,
             entities: [User, Parcel, Deed, AuditLog, Case, Transaction, Role, Permission, SystemConfig],
@@ -74,7 +81,7 @@ export const AppDataSource = new DataSource(
         : {
             type: "sqlite",
             database: "database_v2.sqlite",
-            synchronize: false,
+            synchronize: true, // Use sync only for local dev
             logging: true,
             entities: [User, Parcel, Deed, AuditLog, Case, Transaction, Role, Permission, SystemConfig],
             subscribers: [AuditSubscriber],
