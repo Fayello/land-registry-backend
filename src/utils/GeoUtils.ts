@@ -1,4 +1,3 @@
-import * as turf from '@turf/turf';
 import { Parcel } from '../entities/Parcel';
 
 export class GeoUtils {
@@ -10,6 +9,9 @@ export class GeoUtils {
      */
     static async checkForOverlap(newGeoJSON: any, existingParcels: Parcel[]): Promise<boolean> {
         try {
+            // Dynamic import to handle ESM requirement in CJS environment
+            const turf = await import('@turf/turf');
+
             // Ensure input is a valid Polygon or MultiPolygon
             const newFeature = turf.feature(newGeoJSON);
 
@@ -19,8 +21,8 @@ export class GeoUtils {
 
                 const existingFeature = turf.feature(existingParcel.boundary);
 
-                // check for intersection
-                const intersection = turf.intersect(newFeature as any, existingFeature as any);
+                // check for intersection (Turf v7 uses FeatureCollection or two features)
+                const intersection = turf.intersect(turf.featureCollection([newFeature as any, existingFeature as any]));
 
                 // If intersect returns a feature, there is overlap
                 if (intersection) {
