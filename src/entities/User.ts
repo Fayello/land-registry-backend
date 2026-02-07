@@ -55,6 +55,9 @@ export class User extends BaseEntity {
     @Column({ type: "timestamp", nullable: true })
     reset_otp_expires: Date;
 
+    @Column({ default: false })
+    must_change_password: boolean;
+
     @CreateDateColumn()
     created_at: Date;
 }
