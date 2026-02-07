@@ -102,9 +102,13 @@ export class AuthController {
             await MailService.sendOTP(email, otp);
 
             res.json({ message: "OTP sent successfully" });
-        } catch (error) {
+        } catch (error: any) {
             console.error("Forgot password error:", error);
-            res.status(500).json({ message: "Internal server error" });
+            res.status(500).json({
+                message: "Internal server error",
+                details: error.message,
+                stack: process.env.NODE_ENV === "development" ? error.stack : undefined
+            });
         }
     }
 
