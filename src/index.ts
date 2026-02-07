@@ -24,7 +24,8 @@ import parcelRoutes from "./routes/parcels";
 import adminRoutes from "./routes/admin";
 import ingestionRoutes from "./routes/ingestion";
 
-dotenv.config();
+dotenv.config({ path: ".env.local" });
+dotenv.config(); // Fallback to .env
 
 const app = express();
 const port = process.env.PORT || 3001;
