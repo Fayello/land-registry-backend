@@ -56,13 +56,16 @@ app.use(async (req, res, next) => {
 app.use(express.json());
 
 // Database Connection
-const databaseUrl = process.env.DATABASE_URL;
+const getEnv = (key: string) => process.env[key] || process.env[`backenddigifoncier_${key}`];
+
+const databaseUrl = getEnv("DATABASE_URL");
 const isProduction = process.env.NODE_ENV === "production" || !!databaseUrl;
 
 if (isProduction && !databaseUrl) {
     console.warn("⚠️  WARNING: Running in production mode but DATABASE_URL is UNDEFINED. Defaulting to local postgres (which will fail on Vercel).");
+    console.log("Current ENV keys:", Object.keys(process.env).filter(k => k.includes("URL") || k.includes("DATABASE")));
 } else if (databaseUrl) {
-    console.log(`📡 Database URL detected: ${databaseUrl.substring(0, 15)}...${databaseUrl.substring(databaseUrl.length - 5)}`);
+    console.log(`📡 Database URL detected (Smart lookup): ${databaseUrl.substring(0, 15)}...${databaseUrl.substring(databaseUrl.length - 5)}`);
 }
 
 export const AppDataSource = new DataSource(
